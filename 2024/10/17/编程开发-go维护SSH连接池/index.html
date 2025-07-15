@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+    
+    <head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport" />
+    <meta name="description" content="如何在 Go 中使用 SSH 连接池提升系统性能与响应速度" />
+    <meta name="hexo-theme-A4" content="v1.9.6" />
+    <link rel="alternate icon" type="image/webp" href="/img/favicon.webp">
+    <title>Lavie | 落霞与孤鹜齐飞 秋水共长天一色</title>
+
+    
+        
+<link rel="stylesheet" href="/css/highlight/style1.css">
+
+        
+<link rel="stylesheet" href="/css/reset.css">
+
+        
+<link rel="stylesheet" href="/css/markdown.css">
+
+        
+<link rel="stylesheet" href="/css/fonts.css">
+ 
+         <!--注意：首页既不是post也不是page-->
+        
+        
+        
+<link rel="stylesheet" href="/css/ui.css">
+ 
+        
+<link rel="stylesheet" href="/css/style.css">
+
+
+        
+            <!--返回顶部css-->
+            
+<link rel="stylesheet" href="/css/returnToTop.css">
+
+            
+<link rel="stylesheet" href="/css/unicons.css">
+
+        
+        
+            <!--目录-->
+            
+<link rel="stylesheet" href="/css/toc.css">
+
+        
+    
+
+    
+        
+<link rel="stylesheet" href="/css/returnToLastPage.css">
+
+    
+    
+   
+<link rel="stylesheet" href="/css/lightgallery-bundle.min.css">
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+    
+    
+
+    
+    
+
+
+
+    
+
+    
+    
+
+    
+    
+    
+    <body>
+        <script src="/js/darkmode-js.min.js"></script>
+        
+        <script>
+            const options = {
+                bottom: '40px', // default: '32px'
+                right: 'unset', // default: '32px'
+                left: '42px', // default: 'unset'
+                time: '0.3s', // default: '0.3s'
+                mixColor: '#fff', // default: '#fff'
+                backgroundColor: ' #e4e4e4 ',  // default: '#fff'
+                buttonColorDark: '#100f2c',  // default: '#100f2c'
+                buttonColorLight: '#fff', // default: '#fff'
+                saveInCookies: true, // default: true,
+                label: '🌓', // default: ''
+                autoMatchOsTheme: true // default: true
+            }
+            const darkmode = new Darkmode(options);
+            darkmode.showWidget();
+        </script>
+        
+        
+            <div class="left-toc-container">
+                <nav id="toc" class="bs-docs-sidebar"></nav>
+            </div>
+        
+        <div class="paper">
+            
+            
+            
+            
+                <div class="shadow-drop-2-bottom paper-main">
+                    
+
+
+<div class="header">
+    <div class="header-container">
+        <img style="
+        width: 56px;
+        height: auto;" alt="^-^" cache-control="max-age=86400" class="header-img" src="/img/favicon.webp" width="10%"></img>
+        <div class="header-content">
+            <a class="logo" href="/">Lavie</a> 
+            <span class="description">Lavie 的个人博客，记录了许多自己的生活感悟和计算机专业知识，不太靠谱，希望能让你有所收获。</span> 
+        </div>
+        
+    </div>
+    
+   
+    <ul class="nav">
+        
+            
+                <li><a href="/">首页</a></li>
+            
+        
+            
+                <li><a href="/list/">文章</a></li>
+            
+        
+            
+                <li><a href="/about/">关于</a></li>
+            
+        
+            
+                <li><a href="/tags/">标签</a></li>
+            
+        
+            
+                <li><a href="/categories/">分类</a></li>
+            
+        
+    </ul>
+</div> 
+        
+                    
+                    
+
+                    
+                    
+                    
+                    <!--说明是文章post页面-->
+                    
+                        <div class="post-main">
+    
+
+    
+        
+            
+                <div class="post-main-title" style="text-align: center;">
+                    如何在 Go 中使用 SSH 连接池提升系统性能与响应速度
+                </div>
+            
+        
+      
+    
+
+    
+
+        
+            <div class="post-head-meta-center">
+        
+                
+                    <span>最近更新：2025-02-05</span> 
+                
+                
+                    
+                        &nbsp; | &nbsp;
+                    
+                     <span>字数总计：2.1k</span>
+                
+                
+                    
+                        &nbsp; | &nbsp;
+                    
+                    <span>阅读估时：9分钟</span>
+                
+                
+                    
+                        &nbsp; | &nbsp;
+                    
+                    <span id="busuanzi_container_page_pv">
+                        阅读量：<span id="busuanzi_value_page_pv"></span>次
+                    </span>
+                
+            </div>
+    
+
+    <div class="post-md">
+        
+            
+                <ol class="post-toc"><li class="post-toc-item post-toc-level-1"><a class="post-toc-link" href="#1-%E5%88%9D%E5%A7%8B%E5%8C%96%E9%85%8D%E7%BD%AE%E4%B8%8E%E8%BF%9E%E6%8E%A5%E6%B1%A0"><span class="post-toc-text">1. 初始化配置与连接池</span></a></li><li class="post-toc-item post-toc-level-1"><a class="post-toc-link" href="#2-%E8%BF%9E%E6%8E%A5%E6%B1%A0%E7%9A%84%E8%AE%BE%E8%AE%A1"><span class="post-toc-text">2. 连接池的设计</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#2-1-%E7%BB%93%E6%9E%84%E4%BD%93"><span class="post-toc-text">2.1 结构体</span></a></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#2-2-%E5%88%9B%E5%BB%BA%E8%BF%9E%E6%8E%A5%E6%B1%A0"><span class="post-toc-text">2.2 创建连接池</span></a></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#2-3-%E4%BB%8E%E8%BF%9E%E6%8E%A5%E6%B1%A0%E8%8E%B7%E5%8F%96%E8%BF%9E%E6%8E%A5"><span class="post-toc-text">2.3 从连接池获取连接</span></a></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#%E6%AF%8F%E6%AC%A1%E8%BF%9E%E6%8E%A5%E5%AE%8C%E6%AF%95%E5%B0%86%E8%B5%84%E6%BA%90%E5%BD%92%E5%9B%9E%E6%B1%A0%E4%B8%AD"><span class="post-toc-text">每次连接完毕将资源归回池中</span></a></li></ol></li><li class="post-toc-item post-toc-level-1"><a class="post-toc-link" href="#3-%E4%BD%BF%E7%94%A8%E8%BF%9E%E6%8E%A5%E6%B1%A0-%E5%85%B7%E4%BD%93%E4%B8%9A%E5%8A%A1%E9%80%BB%E8%BE%91"><span class="post-toc-text">3. 使用连接池(具体业务逻辑)</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#3-1-%E7%A1%AE%E4%BF%9D%E8%BF%9C%E7%A8%8B%E7%9B%AE%E5%BD%95%E5%AD%98%E5%9C%A8"><span class="post-toc-text">3.1 确保远程目录存在</span></a></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#3-2-%E6%89%A7%E8%A1%8C%E8%BF%9C%E7%A8%8B%E5%91%BD%E4%BB%A4"><span class="post-toc-text">3.2 执行远程命令</span></a></li></ol></li><li class="post-toc-item post-toc-level-1"><a class="post-toc-link" href="#%E6%80%BB%E7%BB%93"><span class="post-toc-text">总结</span></a></li></ol>
+            
+        
+        <div class=".article-gallery"><blockquote>
+<p>在现代开发中，处理大量并发请求时，创建和管理SSH连接池能显著提高系统的性能和响应速度。本文将讲解如何在Go中通过维护SSH连接池，减少重复的SSH连接创建，进而减少响应时延。</p>
+</blockquote>
+<h1 id="1-初始化配置与连接池"><a href="#1-初始化配置与连接池" class="headerlink" title="1. 初始化配置与连接池"></a>1. 初始化配置与连接池</h1><p>在使用连接池前，必须确保每次执行程序时，连接池不会每次都初始化；因而，我们需要利用 go 语言中的 <code>sync.Once</code> 实现确保所有的初始化都仅仅执行一次。</p>
+<p>同时，保证连接池的相关维护变量是全局而非局部。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> (</span><br><span class="line">	globalConfig *config.Config <span class="comment">// config.Config 中维护了对应SSH的连接配置信息</span></span><br><span class="line">	sshPool      *SSHConnectionPool               <span class="comment">// 创建全局连接池</span></span><br><span class="line">	once         sync.Once</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(elf *ElFinderConnector)</span></span> ServeHTTP(rw http.ResponseWriter, req *http.Request) &#123;</span><br><span class="line">	decoder := form.NewDecoder()</span><br><span class="line">	</span><br><span class="line">	<span class="keyword">switch</span> req.Method &#123;</span><br><span class="line">	<span class="keyword">case</span> <span class="string">&quot;GET&quot;</span>:</span><br><span class="line">		<span class="keyword">if</span> err := req.ParseForm(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">			http.Error(rw, err.Error(), http.StatusInternalServerError)</span><br><span class="line">			<span class="keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line">	<span class="keyword">case</span> <span class="string">&quot;POST&quot;</span>:</span><br><span class="line">		err := req.ParseMultipartForm(<span class="number">32</span> &lt;&lt; <span class="number">20</span>)</span><br><span class="line">		<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">			http.Error(rw, err.Error(), http.StatusBadRequest)</span><br><span class="line">			<span class="keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line">	<span class="keyword">default</span>:</span><br><span class="line">		http.Error(rw, <span class="string">&quot;Method Not Allowed&quot;</span>, http.StatusMethodNotAllowed)</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 使用 sync.Once 确保配置文件和连接池初始化仅执行一次</span></span><br><span class="line">	once.Do(<span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">		globalConfig, err = config.LoadConfig(common.CONFIG_YML)</span><br><span class="line">		<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">			http.Error(rw, <span class="string">&quot;加载配置文件失败&quot;</span>, http.StatusInternalServerError)</span><br><span class="line">			<span class="keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		sshConfig := &amp;ssh.ClientConfig&#123;</span><br><span class="line">			User: globalConfig.Username,</span><br><span class="line">			Auth: []ssh.AuthMethod&#123;</span><br><span class="line">				ssh.Password(globalConfig.Password),</span><br><span class="line">			&#125;,</span><br><span class="line">			HostKeyCallback: ssh.InsecureIgnoreHostKey(),</span><br><span class="line">			Timeout:         <span class="number">5</span> * time.Second,</span><br><span class="line">		&#125;</span><br><span class="line">		sshPool = NewSSHConnectionPool(globalConfig.Host+<span class="string">&quot;:&quot;</span>+globalConfig.Port, sshConfig, <span class="number">100</span>)</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	elf.dispatch(rw, req)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在上述代码中，<code>sshPool = NewSSHConnectionPool(globalConfig.Host+&quot;:&quot;+globalConfig.Port, sshConfig, 100)</code> 这行代码用于初始化 100 大小的连接池，并存储到 <code>sshPool</code> 变量中，后续如果需要维护，仅仅读取该变量即可。</p>
+<h1 id="2-连接池的设计"><a href="#2-连接池的设计" class="headerlink" title="2. 连接池的设计"></a>2. 连接池的设计</h1><p>我们使用自定义的 <code>SSHConnectionPool</code> 结构体来管理SSH连接，避免频繁创建和关闭连接，这将极大地提升效率。<strong>连接池在需要时创建连接，空闲时将连接归还到池中以供后续使用。</strong></p>
+<h2 id="2-1-结构体"><a href="#2-1-结构体" class="headerlink" title="2.1 结构体"></a>2.1 结构体</h2><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> SSHConnectionPool <span class="keyword">struct</span> &#123;</span><br><span class="line">	mu      sync.Mutex</span><br><span class="line">	conns   <span class="keyword">chan</span> *ssh.Client</span><br><span class="line">	maxSize <span class="type">int</span></span><br><span class="line">	config  *ssh.ClientConfig</span><br><span class="line">	address <span class="type">string</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>mu</code> 是互斥锁，其他的信息与SSH连接配置相关。</li>
+</ul>
+<h2 id="2-2-创建连接池"><a href="#2-2-创建连接池" class="headerlink" title="2.2 创建连接池"></a>2.2 创建连接池</h2><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 创建连接池</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewSSHConnectionPool</span><span class="params">(address <span class="type">string</span>, config *ssh.ClientConfig, maxSize <span class="type">int</span>)</span></span> *SSHConnectionPool &#123;</span><br><span class="line">	<span class="keyword">return</span> &amp;SSHConnectionPool&#123;</span><br><span class="line">		conns:   <span class="built_in">make</span>(<span class="keyword">chan</span> *ssh.Client, maxSize),</span><br><span class="line">		maxSize: maxSize,</span><br><span class="line">		config:  config,</span><br><span class="line">		address: address,</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="2-3-从连接池获取连接"><a href="#2-3-从连接池获取连接" class="headerlink" title="2.3 从连接池获取连接"></a>2.3 从连接池获取连接</h2><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 从连接池获取一个连接</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(pool *SSHConnectionPool)</span></span> GetConnection() (*ssh.Client, <span class="type">error</span>) &#123;</span><br><span class="line">	pool.mu.Lock()</span><br><span class="line">	<span class="keyword">defer</span> pool.mu.Unlock()</span><br><span class="line"></span><br><span class="line">	<span class="keyword">select</span> &#123;</span><br><span class="line">	<span class="keyword">case</span> conn := &lt;-pool.conns:</span><br><span class="line">		fmt.Println(<span class="string">&quot;从连接池获取到现有连接&quot;</span>)</span><br><span class="line">		<span class="keyword">return</span> conn, <span class="literal">nil</span></span><br><span class="line">	<span class="keyword">default</span>:</span><br><span class="line">		fmt.Println(<span class="string">&quot;连接池中没有可用连接，创建新的连接&quot;</span>)</span><br><span class="line">		conn, err := ssh.Dial(<span class="string">&quot;tcp&quot;</span>, pool.address, pool.config)</span><br><span class="line">		<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">			<span class="keyword">return</span> <span class="literal">nil</span>, fmt.Errorf(<span class="string">&quot;SSH 连接失败: %w&quot;</span>, err)</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> conn, <span class="literal">nil</span></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其中，<code>pool.mu.Lock()</code> 这个 <code>pool</code> 连接池对象的内部锁，负责对该对象进行加锁，这样可以保证单一访问的独占性，同时：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> &#123;</span><br><span class="line"><span class="keyword">case</span> conn := &lt;-pool.conns:</span><br><span class="line">	fmt.Println(<span class="string">&quot;从连接池获取到现有连接&quot;</span>)</span><br><span class="line">	<span class="keyword">return</span> conn, <span class="literal">nil</span></span><br><span class="line"><span class="keyword">default</span>:</span><br><span class="line">	fmt.Println(<span class="string">&quot;连接池中没有可用连接，创建新的连接&quot;</span>)</span><br><span class="line">	conn, err := ssh.Dial(<span class="string">&quot;tcp&quot;</span>, pool.address, pool.config)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">nil</span>, fmt.Errorf(<span class="string">&quot;SSH 连接失败: %w&quot;</span>, err)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> conn, <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上述代码利用通道机制，当检测到 <code>case conn := &lt;-pool.conns:</code> 连接池中有现存的连接，则直接返回该连接，视为<strong>重用已有连接</strong>操作。</p>
+<p>否则，才去新建SSH连接，<strong>当然，这里只适用于所有用户都使用同一SSH连接的情况。</strong></p>
+<h2 id="每次连接完毕将资源归回池中"><a href="#每次连接完毕将资源归回池中" class="headerlink" title="每次连接完毕将资源归回池中"></a>每次连接完毕将资源归回池中</h2><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 将连接归还到池中</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(pool *SSHConnectionPool)</span></span> ReturnConnection(conn *ssh.Client) &#123;</span><br><span class="line">	pool.mu.Lock()</span><br><span class="line">	<span class="keyword">defer</span> pool.mu.Unlock()</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> <span class="built_in">len</span>(pool.conns) &lt; pool.maxSize &#123;</span><br><span class="line">		pool.conns &lt;- conn</span><br><span class="line">		fmt.Println(<span class="string">&quot;连接已归还到连接池中&quot;</span>)</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		conn.Close()</span><br><span class="line">		fmt.Println(<span class="string">&quot;连接池已满，关闭连接&quot;</span>)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>前面初始化时，为池分配了一个池的大小（100），当每次连接使用资源完毕后，应及时归还（利用通道机制）。如果发现满了，则及时关闭当前连接。</p>
+<h1 id="3-使用连接池-具体业务逻辑"><a href="#3-使用连接池-具体业务逻辑" class="headerlink" title="3. 使用连接池(具体业务逻辑)"></a>3. 使用连接池(具体业务逻辑)</h1><p>在具体操作中，通过连接池获取一个SSH连接，然后使用该连接创建SFTP客户端，执行远程目录检查及其他命令操作。操作完毕后，连接会被归还到连接池中。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(elf *ElFinderConnector)</span></span> handleFetchUserDir() &#123;</span><br><span class="line">	startTime := time.Now()</span><br><span class="line">	<span class="keyword">defer</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">		totalDuration := time.Since(startTime)</span><br><span class="line">		fmt.Printf(<span class="string">&quot;总执行时间: %v\n&quot;</span>, totalDuration)</span><br><span class="line">	&#125;()</span><br><span class="line"></span><br><span class="line">	remoteDir := filepath.Join(globalConfig.RemoteDir, <span class="string">&quot;user_&quot;</span>+elf.req.CTHRCode)</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 从连接池获取 SSH 连接并记录耗时</span></span><br><span class="line">	getConnStart := time.Now()</span><br><span class="line">	<span class="keyword">if</span> sshPool == <span class="literal">nil</span> &#123;</span><br><span class="line">		elf.res.Error = <span class="string">&quot;SSH连接池未初始化&quot;</span></span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	conn, err := sshPool.GetConnection()</span><br><span class="line">	<span class="keyword">if</span> handleError(err, <span class="string">&quot;SSH 连接失败&quot;</span>, elf) &#123;</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	getConnDuration := time.Since(getConnStart)</span><br><span class="line">	fmt.Printf(<span class="string">&quot;获取 SSH 连接耗时: %v\n&quot;</span>, getConnDuration)</span><br><span class="line"></span><br><span class="line">	<span class="keyword">defer</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">		<span class="keyword">if</span> conn != <span class="literal">nil</span> &#123;</span><br><span class="line">			sshPool.ReturnConnection(conn)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;()</span><br><span class="line"></span><br><span class="line">	createSFTPStart := time.Now()</span><br><span class="line">	sftpClient, err := sftp.NewClient(conn)</span><br><span class="line">	<span class="keyword">if</span> handleError(err, <span class="string">&quot;创建 SFTP 客户端失败&quot;</span>, elf) &#123;</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	createSFTPDuration := time.Since(createSFTPStart)</span><br><span class="line">	fmt.Printf(<span class="string">&quot;创建 SFTP 客户端耗时: %v\n&quot;</span>, createSFTPDuration)</span><br><span class="line"></span><br><span class="line">	<span class="keyword">defer</span> sftpClient.Close()</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 确保远程目录存在并记录耗时</span></span><br><span class="line">	ensureDirStart := time.Now()</span><br><span class="line">	<span class="keyword">if</span> err := ensureRemoteDir(sftpClient, remoteDir); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		elf.res.Error = err.Error()</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	ensureDirDuration := time.Since(ensureDirStart)</span><br><span class="line">	fmt.Printf(<span class="string">&quot;确保远程目录存在耗时: %v\n&quot;</span>, ensureDirDuration)</span><br><span class="line"></span><br><span class="line">	<span class="keyword">type</span> CmdResult <span class="keyword">struct</span> &#123;</span><br><span class="line">		Output <span class="type">string</span></span><br><span class="line">		Err    <span class="type">error</span></span><br><span class="line">	&#125;</span><br><span class="line">	cmdResultChan := <span class="built_in">make</span>(<span class="keyword">chan</span> CmdResult)</span><br><span class="line"></span><br><span class="line">	executeCmdStart := time.Now()</span><br><span class="line">	<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">		output, err := executeRemoteCommand(conn, <span class="string">&quot;ls -l &quot;</span>+remoteDir)</span><br><span class="line">		cmdResultChan &lt;- CmdResult&#123;Output: output, Err: err&#125;</span><br><span class="line">	&#125;()</span><br><span class="line">	result := &lt;-cmdResultChan</span><br><span class="line">	executeCmdDuration := time.Since(executeCmdStart)</span><br><span class="line">	fmt.Printf(<span class="string">&quot;执行远程命令耗时: %v\n&quot;</span>, executeCmdDuration)</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> result.Err != <span class="literal">nil</span> &#123;</span><br><span class="line">		handleError(result.Err, <span class="string">&quot;执行 ls -l 命令失败&quot;</span>, elf)</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	elf.res.CmdOutput = result.Output</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其中，这段代码利用通道机制，将执行命令并获取结果的操作单独抽离出来。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> CmdResult <span class="keyword">struct</span> &#123;</span><br><span class="line">    Output <span class="type">string</span></span><br><span class="line">    Err    <span class="type">error</span></span><br><span class="line">&#125;</span><br><span class="line">cmdResultChan := <span class="built_in">make</span>(<span class="keyword">chan</span> CmdResult)</span><br><span class="line"></span><br><span class="line">executeCmdStart := time.Now()</span><br><span class="line"><span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">    output, err := executeRemoteCommand(conn, <span class="string">&quot;ls -l &quot;</span>+remoteDir)</span><br><span class="line">    cmdResultChan &lt;- CmdResult&#123;Output: output, Err: err&#125;</span><br><span class="line">&#125;()</span><br><span class="line">result := &lt;-cmdResultChan</span><br></pre></td></tr></table></figure>
+
+<p>注意，这段代码需要写在一起：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">conn, err := sshPool.GetConnection() <span class="comment">// 从连接池获取连接</span></span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">    elf.res.Error = err.Error()</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">defer</span> sshPool.ReturnConnection(conn)</span><br></pre></td></tr></table></figure>
+
+<p>用于确保获取连接的同时，无论如何都会在这段代码所在函数执行后，归还连接。而上述的功能，主要是打开一个连接，创建一个SSH客户端，然后执行命令 ls -l，然后返回结果，给前端展示。</p>
+<h2 id="3-1-确保远程目录存在"><a href="#3-1-确保远程目录存在" class="headerlink" title="3.1 确保远程目录存在"></a>3.1 确保远程目录存在</h2><p>在操作远程服务器时，我们通过 SFTP 客户端来检查目录是否存在，必要时创建它。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">ensureRemoteDir</span><span class="params">(client *sftp.Client, remoteDir <span class="type">string</span>)</span></span> <span class="type">error</span> &#123;</span><br><span class="line">	_, err := client.Stat(remoteDir)</span><br><span class="line">	<span class="keyword">if</span> os.IsNotExist(err) &#123;</span><br><span class="line">		<span class="keyword">if</span> err := client.Mkdir(remoteDir); err != <span class="literal">nil</span> &#123;</span><br><span class="line">			<span class="keyword">return</span> fmt.Errorf(<span class="string">&quot;创建远程目录失败: %w&quot;</span>, err)</span><br><span class="line">		&#125;</span><br><span class="line">		fmt.Println(<span class="string">&quot;远程目录已创建: &quot;</span>, remoteDir)</span><br><span class="line">	&#125; <span class="keyword">else</span> <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> fmt.Errorf(<span class="string">&quot;检查远程目录失败: %w&quot;</span>, err)</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		fmt.Println(<span class="string">&quot;远程目录已存在: &quot;</span>, remoteDir)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>remoteDir 为远程目录，自己设置即可。</li>
+</ul>
+<h2 id="3-2-执行远程命令"><a href="#3-2-执行远程命令" class="headerlink" title="3.2 执行远程命令"></a>3.2 执行远程命令</h2><p>我们使用 executeRemoteCommand 方法执行远程命令并返回输出结果。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">executeRemoteCommand</span><span class="params">(conn *ssh.Client, command <span class="type">string</span>)</span></span> (<span class="type">string</span>, <span class="type">error</span>) &#123;</span><br><span class="line">	session, err := conn.NewSession()</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="string">&quot;&quot;</span>, fmt.Errorf(<span class="string">&quot;创建 SSH 会话失败: %w&quot;</span>, err)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">defer</span> session.Close()</span><br><span class="line"></span><br><span class="line">	outputBytes, err := session.CombinedOutput(command)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="string">&quot;&quot;</span>, fmt.Errorf(<span class="string">&quot;执行命令失败: %w&quot;</span>, err)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="type">string</span>(outputBytes), <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>打开 <code>Session</code> 会话之后，也要记得无论如何需要关闭它，以免资源长时间的占用。并使用 <code>session.CombinedOutput(command)</code> 方法执行命令并以字节流的方式获取结果。</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>本文实现了一个简单而高效的连接池设计，充分利用了 Go 的并发特性和资源管理优势。具体来说：</p>
+<ol>
+<li><p>一次性初始化：通过 sync.Once 确保配置文件和连接池的初始化仅执行一次，避免了不必要的重复初始化，减少了开销。</p>
+</li>
+<li><p>连接池的设计：使用自定义的 SSHConnectionPool 结构体，管理 SSH 连接的创建、获取和归还，确保在高并发场景下能够高效重用连接。</p>
+</li>
+<li><p>错误处理机制：在获取连接和执行命令时，采用了健壮的错误处理机制，确保系统在出现问题时能够及时反馈并采取相应措施。</p>
+</li>
+<li><p>并发执行命令：通过 goroutine 和通道机制，实现了命令的并发执行，提高了系统处理请求的效率。</p>
+</li>
+</ol>
+</div>
+    </div>
+
+    <div class="post-meta">
+        <i>
+        
+            <span>2024-10-17</span>
+            
+                <span>该篇文章被 Shuilang He</span>
+            
+            
+                <span>打上标签:
+                    
+                    
+                        <a href='/tags/%E7%BC%96%E7%A8%8B%E5%BC%80%E5%8F%91/'>
+                            编程开发
+                        </a>
+                    
+                </span>
+             
+             
+                <span>归为分类:
+                    
+                    
+                        <a href='/categories/%E7%BC%96%E7%A8%8B%E5%BC%80%E5%8F%91/'>
+                            编程开发
+                        </a>
+                    
+                </span>
+            
+        
+        </i>
+    </div>
+    <br>
+    
+    
+        
+            
+    
+            <div class="post-footer-pre-next">
+                
+                    <span>上一篇：<a href='/2024/11/07/%E7%94%9F%E6%B4%BB%E6%84%9F%E6%82%9F-%E5%9B%9E%E9%A1%BE%E6%AF%95%E4%B8%9A/'>成都已经立冬了 | 2024 毕业感悟</a></span>
+                
+
+                
+                    <span class="post-footer-pre-next-last-span-right">下一篇：<a href="/2024/08/14/%E7%BC%96%E7%A8%8B%E5%BC%80%E5%8F%91-jsqlparser%E6%8B%A6%E6%88%AA%E5%B9%B6%E5%AE%A1%E6%A0%B8SQL%E8%AF%AD%E5%8F%A5/">JSQLParser 以及访问者设计模式实现SQL语句的子句拦截与审核逻辑</a>
+                    </span>
+                
+            </div>
+    
+        
+    
+
+    
+        
+
+     
+</div>
+
+
+
+                                      
+                    
+                    
+                    <div class="footer">
+    
+        <span> 
+            © 1949-2024 China 
+
+            
+                
+
+            
+        </span>
+       
+    
+</div>
+
+
+
+<!--这是指一条线往下的内容-->
+<div class="footer-last">
+    
+            <span>🌊落霞与孤鹜齐飞 秋水共长天一色🌊</span>
+            
+                <span class="footer-last-span-right"><i>本站由<a target="_blank" rel="noopener" href="https://hexo.io/zh-cn/index.html">Hexo</a>驱动｜使用<a target="_blank" rel="noopener" href="https://github.com/HiNinoJay/hexo-theme-A4">Hexo-theme-A4</a>主题</i></span>
+            
+    
+</div>
+
+
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+
+    <!--目录-->
+    
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.7.2/jquery.min.js" type="text/javascript" ></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js" type="text/javascript" ></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tocify/1.9.0/javascripts/jquery.tocify.min.js" type="text/javascript" ></script>
+        
+<script src="/js/toc.js"></script>
+
+    
+
+    
+<script src="/js/randomHeaderContent.js"></script>
+
+    <!--回到顶部按钮-->
+    
+        
+<script src="/js/returnToTop.js"></script>
+
+    
+
+    
+        
+<script src="/js/returnToLastPage.js"></script>
+
+    
+
+
+
+
+
+<script src="/js/lightgallery/lightgallery.umd.min.js"></script>
+
+
+
+<script src="/js/lightgallery/plugins/lg-thumbnail.umd.min.js"></script>
+
+
+
+<script src="/js/lightgallery/plugins/lg-fullscreen.umd.min.js"></script>
+
+
+<script src="/js/lightgallery/plugins/lg-autoplay.umd.min.js"></script>
+
+
+<script src="/js/lightgallery/plugins/lg-zoom.umd.min.js"></script>
+
+
+<script src="/js/lightgallery/plugins/lg-rotate.umd.min.js"></script>
+
+
+<script src="/js/lightgallery/plugins/lg-paper.umd.min.js"></script>
+
+
+
+
+<script type="text/javascript">
+     
+    if (typeof lightGallery !== "undefined") {
+        var options1 = {
+            selector: '.gallery-item',
+            plugins: [lgThumbnail, lgFullscreen, lgAutoplay, lgZoom, lgRotate, lgPager], // 启用插件
+            thumbnail: true,          // 显示缩略图
+            zoom: true,               // 启用缩放功
+            rotate: true,             // 启用旋转功能能
+            autoplay: true,        // 启用自动播放功能
+            fullScreen: true,      // 启用全屏功能
+            pager: false, //页码,
+            zoomFromOrigin: true,   // 从原始位置缩放
+            actualSize: true,       // 启用查看实际大小的功能
+            enableZoomAfter: 300,    // 延迟缩放，确保图片加载完成后可缩放
+        };
+        lightGallery(document.getElementsByClassName('.article-gallery')[0], options1); // 修复选择器
+    }
+    
+</script>
+
+
+    <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script> 
+
+                </div>
+            
+            
+                <!-- 回到顶部的按钮-->  
+                <div class="progress-wrap shadow-drop-2-bottom">
+                    <svg class="progress-circle svg-content" width="100%" height="100%" viewBox="-1 -1 102 102">
+                        <path d="M50,1 a49,49 0 0,1 0,98 a49,49 0 0,1 0,-98"/>
+                    </svg>
+                </div>
+            
+            
+                <!-- 返回的按钮-->  
+                <div class="return-to-last-progress-wrap shadow-drop-2-bottom">
+                    <svg class="progress-circle svg-content" width="100%" height="100%" viewBox="-1 -1 102 102">
+                        <path d="M50,1 a49,49 0 0,1 0,98 a49,49 0 0,1 0,-98"/>
+                    </svg>
+                </div>
+            
+    </body>
+</html>
